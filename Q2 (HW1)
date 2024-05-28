@@ -1,0 +1,53 @@
+#include <iostream>
+#include <deque>
+
+template<typename T>
+class StackAdapter {
+private:
+    std::deque<T> deque; // Use deque as a private member
+
+public:
+    // Add an element to the stack (push to the end of the deque)
+    void push(const T& value) {
+        deque.push_back(value);
+    }
+
+    // Remove an element from the stack (pop from the end of the deque)
+    void pop() {
+        if (!deque.empty()) {
+            deque.pop_back();
+        }
+    }
+
+    // Return the top element of the stack
+    T& top() {
+        return deque.back();
+    }
+
+    // Check if the stack is empty
+    bool empty() const {
+        return deque.empty();
+    }
+
+    // Return the size of the stack
+    size_t size() const {
+        return deque.size();
+    }
+};
+
+int main() {
+    StackAdapter<int> stack;
+
+    stack.push(1);
+    stack.push(2);
+    stack.push(3);
+
+    std::cout << "Stack top: " << stack.top() << std::endl; // Output: Stack top: 3
+
+    stack.pop();
+    std::cout << "Stack top after pop: " << stack.top() << std::endl; // Output: Stack top after pop: 2
+
+    std::cout << "Stack size: " << stack.size() << std::endl; // Output: Stack size: 2
+
+    return 0;
+}
