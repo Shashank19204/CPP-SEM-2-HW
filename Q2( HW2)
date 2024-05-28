@@ -1,0 +1,26 @@
+#include <iostream>
+#include <utility>
+
+// Basic print function: handles and prints a single argument
+template<typename T>
+void print(T&& arg) {
+    std::cout << std::forward<T>(arg) << std::endl;
+}
+
+// Variadic template version of the print function to handle multiple arguments
+template<typename T, typename... Args>
+void print(T&& first, Args&&... args) {
+    // Print the first argument
+    std::cout << std::forward<T>(first) << ", ";
+    // Recursively call print function for the remaining arguments
+    print(std::forward<Args>(args)...);
+}
+
+int main() {
+    print(1); // Prints an integer
+    print(2.3); // Prints a floating point number
+    print("Hello, World!"); // Prints a string literal
+    print(1, 2.3, "Hello, World!", std::string("Another string")); // Prints mixed types
+
+    return 0;
+}
