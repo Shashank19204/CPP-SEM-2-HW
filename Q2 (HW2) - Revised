@@ -1,0 +1,35 @@
+#include <deque> // include your own deque
+#include <cassert>
+
+template<typename T, typename Container = std::deque<T>> // Use your deque by default
+class Stack {
+public:
+    Stack() = default;
+
+    template<typename U>
+    void push(U&& value) {
+        data_.push_back(std::forward<U>(value));
+    }
+    
+    T pop() {
+        auto value = std::move(data_.back());
+        
+        data_.pop_back();
+        
+        return value;
+    }
+private:
+    Container data_;
+};
+
+int main() {
+    auto stack = Stack<int>();
+    
+    stack.push(1);
+    stack.push(2);
+    stack.push(3);
+    
+    assert(stack.pop() == 3); 
+    assert(stack.pop() == 2); 
+    assert(stack.pop() == 1); 
+}
