@@ -1,0 +1,933 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <typeinfo>
+#include<cmath>
+
+using namespace std;
+
+template <unsigned M, unsigned N, typename Field =int>
+class Matrix {
+public:
+	~Matrix() {
+		t.clear();
+	}
+
+	Matrix() = default;
+
+	template <typename T = Field>
+	Matrix(vector <vector<T>> a) {
+		cerr << "UMTa" << endl;
+		t.assign(M, vector <Field>(N));
+		for (unsigned i = 0; i < M; i++)
+			for (unsigned j = 0; j < N; j++)t[i][j] = Field(a[i][j]);
+		m = a.size();
+		n = a[0].size();
+	}
+
+	template <int>
+	Matrix(vector <vector<unsigned>> a) {
+		cerr << "UMTint" << endl;
+		t.assign(M, vector <Field>(N));
+		for (unsigned i = 0; i < M; i++)
+			for (unsigned j = 0; j < N; j++)t[i][j] = Field(a[i][j]);
+		m = a.size();
+		n = a[0].size();
+	}
+
+	Matrix& operator+=(const Matrix<M, N, Field>& a) {
+		cerr << "UM+=" << endl;
+		for (unsigned i = 0; i < m; i++)
+			for (unsigned j = 0; j < n; j++)t[i][j] += a.t[i][j];
+		return *this;
+	}
+
+	Matrix& operator-=(const Matrix<M, N, Field>& a) {
+		cerr << "UM-= ";
+		cerr << endl;
+		/*for (unsigned i = 0; i < m; i++) {
+			for (unsigned j = 0; j < n; j++)cerr << t[i][j] << ' ';
+			cerr << endl;
+		}
+		cerr << endl;
+		for (unsigned i = 0; i < m; i++) {
+			for (unsigned j = 0; j < n; j++)cerr << a.t[i][j] << ' ';
+			cerr << endl;
+		}*/
+		for (unsigned i = 0; i < m; i++)
+			for (unsigned j = 0; j < n; j++)t[i][j] -= a.t[i][j];
+		return *this;
+	}
+
+	Matrix& operator*=(const Field& a) {
+		cerr << "UM*=" << endl;
+		for (unsigned i = 0; i < m; i++)
+			for (unsigned j = 0; j < n; j++)t[i][j] *= a;
+		return *this;
+	}
+
+	Matrix<N, M, Field> transposed() const {
+		cerr << "UMtrans" << endl;
+		vector <vector <Field>> v(n, vector <Field>(m));
+		for (unsigned i = 0; i < n; i++) {
+			for (unsigned j = 0; j < m; j++)v[i][j] = t[j][i];
+		}
+		return Matrix<N, M, Field>(v);
+	}
+
+	unsigned rank() const {
+		cerr << "UMrank" << endl;
+		cerr << typeid(Field).name() << endl;
+		vector <vector <Field>> a;
+		if (m < n) {
+			a.assign(n, vector <Field>(m));
+			for (unsigned i = 0; i < n; i++)
+				for (unsigned j = 0; j < m; j++)
+					a[i][j] = t[j][i];
+		}
+		else a = t;
+		for (auto i : t) {
+			//for (auto j : i)cerr << j << ' ';
+			//	cerr << endl;
+		}
+		unsigned n1 = a[0].size(), m1 = a.size();
+		unsigned res = min(n1, m1);
+		vector<bool> used(m1);
+		for (unsigned i = 0; i < n1; i++) {
+			unsigned j;
+			for (j = 0; j < m1; j++)
+				if (!used[j] && a[j][i] != Field(0))
+					break;
+			if (j == m1)
+				res--;
+			else {
+				used[j] = true;
+				for (unsigned p = i + 1; p < n1; p++)
+					a[j][p] /= a[j][i];
+				for (unsigned k = 0; k < m1; k++)
+					if (k != j && a[k][i] != Field(0))
+						for (unsigned p = i + 1; p < n1; p++)
+							a[k][p] -= a[j][p] * a[k][i];
+			}
+		}
+		return res;
+	}
+
+	Field trace() const {
+		cerr << "UMtrace" << endl;
+		Field res = 0;
+		for (unsigned i = 0; i < min(n, m); i++)
+			res += t[i][i];
+		cerr << res << endl;
+		return res;
+	}
+
+	vector <Field>operator[](size_t i) const {
+		return t[i];
+	}
+
+	vector <Field>& operator[](size_t i) {
+		return t[i];
+	}
+
+	vector<Field> getRow(unsigned x) const {
+		return t[x];
+	}
+
+	vector<Field> getColumn(unsigned x) const {
+		vector <Field> res;
+		for (unsigned i = 0; i < m; i++)
+			res.push_back(t[i][x]);
+		return res;
+	}
+
+private:
+	vector <vector<Field>> t;
+	unsigned m, n;
+};
+
+template <unsigned N, typename Field =int>
+class SquareMatrix {
+public:
+	~SquareMatrix() {
+		t.clear();
+	}
+	SquareMatrix() {
+		cerr << "SM" << endl;
+		n = N;
+		t.assign(N, vector <Field>(N));
+		for (unsigned i = 0; i < n; i++)t[i][i] = 1;
+	}
+
+	template <typename T = Field>
+	SquareMatrix(vector <vector<T>> a) {
+		cerr << "SMTa" << endl;
+		t.assign(N, vector <Field>(N));
+		for (unsigned i = 0; i < N; i++)
+			for (unsigned j = 0; j < N; j++)t[i][j] = Field(a[i][j]);
+		n = a.size();
+	}
+
+	template <int>
+	SquareMatrix(vector <vector<int>> a) {
+		cerr << "SqMTint" << endl;
+		t.assign(N, vector <Field>(N));
+		for (unsigned i = 0; i < N; i++)
+			for (unsigned j = 0; j < N; j++)t[i][j] = Field(a[i][j]);
+		n = a.size();
+	}
+
+	SquareMatrix& operator+=(const SquareMatrix<N, Field>& a) {
+		cerr << "SM+=" << endl;
+		for (unsigned i = 0; i < n; i++)
+			for (unsigned j = 0; j < n; j++)t[i][j] += a[i][j];
+		return *this;
+	}
+
+	SquareMatrix& operator-=(const SquareMatrix<N, Field>& a) {
+		cerr << "SM-=" << endl;
+		for (unsigned i = 0; i < n; i++)
+			for (unsigned j = 0; j < n; j++)t[i][j] -= a[i][j];
+		return *this;
+	}
+
+	SquareMatrix& operator*=(const Field& a) {
+		cerr << "SM*=" << endl;
+		for (unsigned i = 0; i < n; i++)
+			for (unsigned j = 0; j < n; j++)t[i][j] *= a;
+		return *this;
+	}
+
+	SquareMatrix& operator*= (const SquareMatrix<N, Field>& a) {
+		cerr << "SMF*=" << endl;
+		for (unsigned i = 0; i < N; i++) {
+			for (unsigned j = 0; j < N; j++) {
+				Field sum = 0;
+				for (unsigned r = 0; r < N; r++)sum += t[i][r] * a.t[r][j];
+			}
+		}
+		return *this;
+	}
+
+	Field det() const {
+		cerr << "SMdet" << endl;
+		if (is_same<Field,int>::value == false) {
+			double ans = 1;
+			vector <vector <double>> a(N, vector <double>(N));
+			for (unsigned i = 0; i < N; i++) {
+				for (unsigned j = 0; j < N; j++) {
+					double der = double(t[i][j]);
+					a[i][j] = der;
+				}
+			}
+			for (unsigned i = 0; i < n; ++i) {
+				unsigned k = i;
+				for (unsigned j = i + 1; j < n; ++j) {
+					if (a[j][i] * a[j][i] > a[k][i] * a[k][i])
+						k = j;
+				}
+				if (a[k][i] == 0) {
+					ans = 0;
+					break;
+				}
+				swap(a[i], a[k]);
+				if (i != k)
+					ans *= -1;
+				ans *= a[i][i];
+				for (unsigned j = i + 1; j < n; ++j)
+					a[i][j] /= a[i][i];
+
+				for (unsigned j = 0; j < n; ++j)
+					if (j != i && a[j][i] != 0)
+						for (unsigned k = i + 1; k < n; ++k)
+							a[j][k] -= a[i][k] * a[j][i];
+			}
+			return Field(int(ans));
+		}
+		for (unsigned i = 0; i < N; i++) {
+			for (unsigned j = 0; j < N; j++)cerr << t[i][j] << ' ';
+			cerr << endl;
+		}
+		Field ans = 1;
+		vector <vector <Field>> a(N, vector <Field>(N));
+		for (unsigned i = 0; i < N; i++) {
+			for (unsigned j = 0; j < N; j++) {
+				a[i][j] = t[i][j];
+			}
+		}
+		for (unsigned i = 0; i < n; ++i) {
+			unsigned k = i;
+			for (unsigned j = i + 1; j < n; ++j) {
+				if (a[j][i] * a[j][i] > a[k][i] * a[k][i])
+					k = j;
+			}
+			if (a[k][i] == Field(0)) {
+				ans = Field(0);
+				break;
+			}
+			swap(a[i], a[k]);
+			if (i != k)
+				ans *= -1;
+			ans *= a[i][i];
+			for (unsigned j = i + 1; j < n; ++j)
+				a[i][j] /= a[i][i];
+
+			for (unsigned j = 0; j < n; ++j)
+				if (j != i && a[j][i] != Field(0))
+					for (unsigned k = i + 1; k < n; ++k)
+						a[j][k] -= a[i][k] * a[j][i];
+		}
+		return ans;
+	}
+	SquareMatrix<N, Field> transposed() const {
+		cerr << "SMtrans*=" << endl;
+		vector <vector <Field>> v(n, vector <Field>(n));
+		for (unsigned i = 0; i < n; i++) {
+			for (unsigned j = 0; j < n; j++)v[i][j] = t[j][i];
+		}
+		return SquareMatrix<N, Field>(v);
+	}
+
+	unsigned rank() const {
+		cerr << "SMrank" << endl;
+		auto a = t;
+		unsigned res = n;
+		vector<bool> used(n);
+		for (unsigned i = 0; i < n; i++) {
+			unsigned j;
+			for (j = 0; j < n; j++)
+				if (!used[j] && a[j][i] != 0)
+					break;
+			if (j == n)
+				res--;
+			else {
+				used[j] = true;
+				for (unsigned p = i + 1; p < n; p++)
+					a[j][p] /= a[j][i];
+				for (unsigned k = 0; k < n; k++)
+					if (k != j && a[k][i] != Field(0))
+						for (unsigned p = i + 1; p < n; p++)
+							a[k][p] -= a[j][p] * a[k][i];
+			}
+		}
+		return res;
+	}
+
+	Field trace() const {
+		cerr << "SMrace" << endl;
+		Field res = 0;
+		for (unsigned i = 0; i < n; i++)
+			res += t[i][i];
+		cerr << res << endl;
+		return res;
+	}
+
+	SquareMatrix inverted() {
+		//cerr << "         " << N << endl;
+		cerr << "SMinverted" << endl;
+		Field d = (*this).det();
+		vector <vector <Field>> r;
+		for (unsigned i = 0; i < n; i++) {
+			r.push_back({});
+			for (unsigned j = 0; j < n; j++) {
+				vector <vector <Field>> r1;
+				unsigned tek = 0;
+				for (unsigned k = 0; k < n; k++) {
+					if (i == k)continue;
+					r1.push_back({});
+					for (unsigned l = 0; l < n; l++) {
+						if (j == l)continue;
+						r1[tek].push_back(t[k][l]);
+					}
+					tek++;
+				}
+				Field d1 = det3(r1);
+				cerr << "         " << d << endl;
+				r[i].push_back(d1 / d);
+				if ((i + j) % 2)r[i][j] *= Field(-1);
+			}
+		}
+		for (unsigned i = 0; i < n; i++) {
+			for (unsigned j = i + 1; j < n; j++)swap(r[i][j], r[j][i]);
+		}
+		return SquareMatrix(r);
+	}
+
+	void invert() {
+		cerr << "SMinvert" << endl;
+		*this = (*this).inverted();
+	}
+
+	vector <Field>operator[](size_t i) const {
+		return t[i];
+	}
+
+	vector <Field>& operator[](size_t i) {
+		return t[i];
+	}
+
+	vector<Field> getRow(unsigned x) const {
+		return t[x];
+	}
+
+	vector<Field> getColumn(unsigned x) const {
+		vector <Field> res;
+		for (unsigned i = 0; i < n; i++)
+			res.push_back(t[i][x]);
+		return res;
+	}
+
+private:
+	vector <vector<Field>> t;
+	unsigned n;
+	Field det3(vector <vector <Field>> a1) const {
+		unsigned sz = a1.size();
+		cerr << "UMdet" << endl;
+		if (is_same<Field,int>::value == false) {
+			double ans = 1;
+			vector <vector <double>> a(sz, vector <double>(sz));
+			for (unsigned i = 0; i < sz; i++) {
+				for (unsigned j = 0; j < sz; j++) {
+					double der = double(a1[i][j]);
+					a[i][j] = der;
+				}
+			}
+			for (unsigned i = 0; i < sz; ++i) {
+				unsigned k = i;
+				for (unsigned j = i + 1; j < sz; ++j) {
+					if (a[j][i] * a[j][i] > a[k][i] * a[k][i])
+						k = j;
+				}
+				if (a[k][i] == 0) {
+					ans = 0;
+					break;
+				}
+				swap(a[i], a[k]);
+				if (i != k)
+					ans *= -1;
+				ans *= a[i][i];
+				for (unsigned j = i + 1; j < sz; ++j)
+					a[i][j] /= a[i][i];
+
+				for (unsigned j = 0; j < sz; ++j)
+					if (j != i && a[j][i] != 0)
+						for (unsigned k = i + 1; k < sz; ++k)
+							a[j][k] -= a[i][k] * a[j][i];
+			}
+			int a2 = round(ans);
+			cerr << "                        ans" << ans << ' ' << a2 << ' ' << endl;
+			return Field(a2);
+		}
+		Field ans = 1;
+		vector <vector <Field>> a(sz, vector <Field>(sz));
+		for (unsigned i = 0; i < sz; i++) {
+			for (unsigned j = 0; j < sz; j++) {
+				a[i][j] = a1[i][j];
+			}
+		}
+		for (unsigned i = 0; i < sz; ++i) {
+			unsigned k = i;
+			for (unsigned j = i + 1; j < sz; ++j) {
+				if (a[j][i] * a[j][i] > a[k][i] * a[k][i])
+					k = j;
+			}
+			if (a[k][i] == Field(0)) {
+				ans = Field(0);
+				break;
+			}
+			swap(a[i], a[k]);
+			if (i != k)
+				ans *= -1;
+			ans *= a[i][i];
+			for (unsigned j = i + 1; j < sz; ++j)
+				a[i][j] /= a[i][i];
+
+			for (unsigned j = 0; j < sz; ++j)
+				if (j != i && a[j][i] != Field(0))
+					for (unsigned k = i + 1; k < sz; ++k)
+						a[j][k] -= a[i][k] * a[j][i];
+		}
+		return ans;
+	}
+};
+
+template <unsigned N, typename Field =int>
+SquareMatrix<N, Field> operator+(const SquareMatrix<N, Field>& a, const SquareMatrix<N, Field>& b) {
+	cerr << "SMSM+ ";
+	SquareMatrix<N, Field> copy = a;
+	copy += b;
+	return copy;
+}
+
+template <unsigned N, typename Field =int>
+SquareMatrix<N, Field> operator-(const SquareMatrix<N, Field>& a, const SquareMatrix<N, Field>& b) {
+	cerr << "SMSM- ";
+	SquareMatrix<N, Field> copy = a;
+	copy -= b;
+	return copy;
+}
+
+template <unsigned N, typename Field =int>
+SquareMatrix<N, Field> operator*(const Field& a, const SquareMatrix<N, Field>& b) {
+	cerr << "F*SM" << endl;
+	SquareMatrix<N, Field> copy = b;
+	copy *= a;
+	return copy;
+}
+
+template <unsigned N, typename Field =int>
+SquareMatrix<N, Field> operator*(const SquareMatrix<N, Field>& a, const Field& b) {
+	cerr << "SM*F" << endl;
+	SquareMatrix<N, Field> copy = a;
+	copy *= b;
+	return copy;
+}
+
+template <unsigned N, typename Field =int>
+SquareMatrix<N, Field> operator* (const SquareMatrix<N, Field>& a, const SquareMatrix<N, Field>& b) {
+	cerr << "SM*SM" << endl;
+	vector <vector <Field>> res(N, vector <Field>(N));
+	for (unsigned i = 0; i < N; i++) {
+		for (unsigned j = 0; j < N; j++) {
+			for (unsigned r = 0; r < N; r++)res[i][j] += a[i][r] * b[r][j];
+		}
+	}
+	return SquareMatrix<N, Field>(res);
+}
+
+template <unsigned N, typename Field>
+class Matrix<N, N, Field> {
+public:
+	~Matrix() {
+		t.clear();
+	}
+
+	Matrix() {
+		cerr << "M" << endl;
+		n = N;
+		t.assign(n, vector <Field>(n));
+		for (unsigned i = 0; i < n; i++)t[i][i] = 1;
+	}
+
+	template <typename T = Field>
+	Matrix(vector <vector<T>> a) {
+		cerr << "MTa"<<endl;
+		t.assign(N, vector <Field>(N));
+		for (unsigned i = 0; i < N; i++)
+			for (unsigned j = 0; j < N; j++)t[i][j] = Field(a[i][j]);
+		n = a[0].size();
+	}
+
+	template <int>
+	Matrix(vector <vector<int>> a) {
+		cerr << "MTint" << endl;
+		t.assign(N, vector <Field>(N));
+		for (unsigned i = 0; i < N; i++) {
+			for (unsigned j = 0; j < N; j++) {
+				t[i][j] = a[i][j];
+			
+			}
+			
+		}
+		n = a[0].size();
+	}
+
+	Matrix& operator+=(const Matrix<N, N, Field>& a) {
+		cerr << "M+=" << endl;
+		for (unsigned i = 0; i < n; i++)
+			for (unsigned j = 0; j < n; j++)t[i][j] += a[i][j];
+		return *this;
+	}
+
+	Matrix& operator-=(const Matrix<N, N, Field>& a) {
+		cerr << "M-=" << endl;
+		for (unsigned i = 0; i < n; i++)
+			for (unsigned j = 0; j < n; j++)t[i][j] -= a[i][j];
+		return *this;
+	}
+
+	Matrix& operator*=(const Field& a) {
+		cerr << "M*=F" << endl;
+		for (unsigned i = 0; i < n; i++)
+			for (unsigned j = 0; j < n; j++)t[i][j] *= a;
+		return *this;
+	}
+
+	Matrix& operator*= (const Matrix<N, N, Field>& a) {
+		cerr << "M*=" << endl;
+		for (unsigned i = 0; i < N; i++) {
+			for (unsigned j = 0; j < N; j++) {
+				Field sum = 0;
+				for (unsigned r = 0; r < N; r++)sum += t[i][r] * a.t[r][j];
+			}
+		}
+		return *this;
+	}
+
+	Field det() const {
+		cerr << "Mdet" << endl;
+		if (is_samee<Field,int>::value == false) {
+			double ans = 1;
+			vector <vector <double>> a(N, vector <double>(N));
+			for (unsigned i = 0; i < N; i++) {
+				for (unsigned j = 0; j < N; j++) {
+					//double der = double(t[i][j]);
+					a[i][j] = double(t[i][j]);
+				}
+			}
+			for (unsigned i = 0; i < n; ++i) {
+				unsigned k = i;
+				for (unsigned j = i + 1; j < n; ++j)
+					if (a[j][i] * a[j][i] > a[k][i] * a[k][i])
+						k = j;
+				if (a[k][i] == Field(0)) {
+					ans = Field(0);
+					break;
+				}
+				swap(a[i], a[k]);
+				if (i != k)
+					ans *= -1;
+				ans *= a[i][i];
+				for (unsigned j = i + 1; j < n; ++j)
+					a[i][j] /= a[i][i];
+
+				for (unsigned j = 0; j < n; ++j)
+					if (j != i && a[j][i] != Field(0))
+						for (unsigned k = i + 1; k < n; ++k)
+							a[j][k] -= a[i][k] * a[j][i];
+			}
+			return Field(int(ans));
+		}
+		else {
+			Field ans = 1;
+			vector <vector <Field>> a(N, vector <Field>(N));
+			for (unsigned i = 0; i < N; i++) {
+				for (unsigned j = 0; j < N; j++) {
+					a[i][j] = t[i][j];
+				}
+			}
+			for (unsigned i = 0; i < n; ++i) {
+				unsigned k = i;
+				for (unsigned j = i + 1; j < n; ++j) {
+					if (a[j][i] * a[j][i] > a[k][i] * a[k][i])
+						k = j;
+				}
+				if (a[k][i] == Field(0)) {
+					ans = Field(0);
+					break;
+				}
+				swap(a[i], a[k]);
+				if (i != k)
+					ans *= -1;
+				ans *= a[i][i];
+				for (unsigned j = i + 1; j < n; ++j)
+					a[i][j] /= a[i][i];
+
+				for (unsigned j = 0; j < n; ++j)
+					if (j != i && a[j][i] != Field(0))
+						for (unsigned k = i + 1; k < n; ++k)
+							a[j][k] -= a[i][k] * a[j][i];
+			}
+			return ans;
+		}
+	}
+
+	Matrix<N, N, Field> transposed() const {
+		cerr << "Mtrans" << endl;
+		vector <vector <Field>> v(n, vector <Field>(n));
+		for (unsigned i = 0; i < n; i++) {
+			for (unsigned j = 0; j < n; j++)v[i][j] = t[j][i];
+		}
+		return Matrix<N, N, Field>(v);
+	}
+
+	unsigned rank() const {
+		cerr << "Mrank" << endl;
+		auto a = t;
+		unsigned res = n;
+		vector<bool> used(n);
+		for (unsigned i = 0; i < n; i++) {
+			unsigned j;
+			for (j = 0; j < n; j++)
+				if (!used[j] && a[j][i] != Field(0))
+					break;
+			if (j == n)
+				res--;
+			else {
+				used[j] = true;
+				for (unsigned p = i + 1; p < n; p++)
+					a[j][p] /= a[j][i];
+				for (unsigned k = 0; k < n; k++)
+					if (k != j && a[k][i] != Field(0))
+						for (unsigned p = i + 1; p < n; p++)
+							a[k][p] -= a[j][p] * a[k][i];
+			}
+		}
+		return res;
+	}
+
+	Field trace() const {
+		cerr << "Mtrace" << endl;
+		Field res = 0;
+		for (unsigned i = 0; i < n; i++)
+			res += t[i][i];
+		cerr << res << endl;
+		return res;
+	}
+
+	Matrix inverted() const {
+		cerr << "Minverted" << endl;
+		Field d = (*this).det();
+		cout << "                             " << d << endl;
+		vector <vector <Field>> r;
+		for (unsigned i = 0; i < n; i++) {
+			r.push_back({});
+			for (unsigned j = 0; j < n; j++) {
+				vector <vector <Field>> r1;
+				unsigned tek = 0;
+				for (unsigned k = 0; k < n; k++) {
+					if (i == k)continue;
+					r1.push_back({});
+					for (unsigned l = 0; l < n; l++) {
+						if (j == l)continue;
+						r1[tek].push_back(t[k][l]);
+					}
+					tek++;
+				}
+				Field d1 = det3(r1), w;
+				w = d1 / d;
+				r[i].push_back(w);
+				//cerr << "                     " << d1 << ' ' << d << ' ' << d1 / d << ' ' << endl;
+				//cerr << r[i][j] << ' ' << r[i][j] * -1 << endl;
+				if ((i + j) % 2) {
+					r[i][j] *= Field(-1);
+				}
+			}
+			cerr << "                   ";
+			for (unsigned l = 0; l < n; l++) {
+				Field sum(0);
+				for (unsigned j = 0; j < n; j++) {
+					sum += r[i][j] * t[l][j];
+				}
+				cerr << sum << ' ';
+			}
+			cerr << endl;
+		}
+		for (unsigned i = 0; i < n; i++) {
+			for (unsigned j = i + 1; j < n; j++)swap(r[i][j], r[j][i]);
+		}
+		for (unsigned i = 0; i < n; i++) {
+			for (unsigned j = 0; j < n; j++)cerr << r[i][j] << ' ';
+			cerr << endl;
+		}
+		return Matrix<N, N, Field>(r);
+	}
+
+	void invert() {
+		cerr << "Minvert" << endl;
+		*this = (*this).inverted();
+	}
+
+	vector <Field>operator[](size_t i) const {
+		return t[i];
+	}
+
+	vector <Field>& operator[](size_t i) {
+		return t[i];
+	}
+
+	vector<Field> getRow(unsigned x) const {
+		cerr << "getRow" << endl;
+		return t[x];
+	}
+
+	vector<Field> getColumn(unsigned x) const {
+		cerr << "getCol" << endl;
+		vector <Field> res;
+		for (unsigned i = 0; i < n; i++)
+			res.push_back(t[i][x]);
+		return res;
+	}
+
+private:
+	vector <vector<Field>> t;
+	unsigned n;
+	Field det3(vector <vector <Field>> a1) const {
+		unsigned sz = a1.size();
+		for (auto i : a1) {
+			for (auto j : i)cout << j << ' ';
+			cout << endl;
+		}
+		cerr << "UMdet" << endl;
+		if (is_same<Field,int>::value == false) {
+			double ans = 1;
+			vector <vector <double>> a(sz, vector <double>(sz));
+			for (unsigned i = 0; i < sz; i++) {
+				for (unsigned j = 0; j < sz; j++) {
+					double der = double(a1[i][j]);
+					a[i][j] = der;
+				}
+			}
+			for (unsigned i = 0; i < sz; ++i) {
+				unsigned k = i;
+				for (unsigned j = i + 1; j < sz; ++j) {
+					if (a[j][i] * a[j][i] > a[k][i] * a[k][i])
+						k = j;
+				}
+				if (a[k][i] == 0) {
+					ans = 0;
+					break;
+				}
+				swap(a[i], a[k]);
+				if (i != k)
+					ans *= -1;
+				ans *= a[i][i];
+				for (unsigned j = i + 1; j < sz; ++j)
+					a[i][j] /= a[i][i];
+
+				for (unsigned j = 0; j < sz; ++j)
+					if (j != i && a[j][i] != 0)
+						for (unsigned k = i + 1; k < sz; ++k)
+							a[j][k] -= a[i][k] * a[j][i];
+			}
+			int a2 = round(ans);
+			cerr << "                        ans" << ans << ' ' << a2 << ' ' << endl;
+			return Field(a2);
+		}
+		Field ans = 1;
+		vector <vector <Field>> a(sz, vector <Field>(sz));
+		for (unsigned i = 0; i < sz; i++) {
+			for (unsigned j = 0; j < sz; j++) {
+				a[i][j] = a1[i][j];
+			}
+		}
+		for (unsigned i = 0; i < sz; ++i) {
+			unsigned k = i;
+			for (unsigned j = i + 1; j < sz; ++j) {
+				if (a[j][i] * a[j][i] > a[k][i] * a[k][i])
+					k = j;
+			}
+			if (a[k][i] == Field(0)) {
+				ans = Field(0);
+				break;
+			}
+			swap(a[i], a[k]);
+			if (i != k)
+				ans *= -1;
+			ans *= a[i][i];
+			for (unsigned j = i + 1; j < sz; ++j)
+				a[i][j] /= a[i][i];
+
+			for (unsigned j = 0; j < sz; ++j)
+				if (j != i && a[j][i] != Field(0))
+					for (unsigned k = i + 1; k < sz; ++k)
+						a[j][k] -= a[i][k] * a[j][i];
+		}
+		return ans;
+	}
+};
+
+template <unsigned M, unsigned N, typename Field =int>
+Matrix<M, N, Field> operator+(const Matrix<M, N, Field>& a, const Matrix<M, N, Field>& b) {
+	cerr << "MM+" << endl;
+	Matrix<M, N, Field> copy = a;
+	copy += b;
+	return copy;
+}
+
+template <unsigned M, unsigned N, typename Field =int>
+Matrix<M, N, Field> operator-(const Matrix<M, N, Field>& a, const Matrix<M, N, Field>& b) {
+	cerr << "MM- ";
+	cerr << typeid(Field).name() << endl;
+	Matrix<M, N, Field> copy = a;
+	copy -= b;
+	auto r = copy + b;
+	return copy;
+}
+
+template <unsigned M, unsigned N, typename Field =int>
+Matrix<M, N, Field> operator*(const Field& a, const Matrix<M, N, Field>& b) {
+	cerr << "FM* ";
+	Matrix<M, N, Field> copy = b;
+	copy *= a;
+	return copy;
+}
+
+template <unsigned M, unsigned N, typename Field =int>
+Matrix<M, N, Field> operator*(const Matrix<M, N, Field>& a, const Field& b) {
+	cerr << "MF* ";
+	Matrix<M, N, Field> copy = a;
+	copy *= b;
+	return copy;
+}
+
+
+template <unsigned K, unsigned M, unsigned N, typename Field =int>
+Matrix<M, K, Field> operator* (const Matrix<M, N, Field>& a, const Matrix<N, K, Field>& b) {
+	cerr << "MM* ";
+	vector <vector <Field>> res(M, vector <Field>(K));
+	for (unsigned i = 0; i < M; i++) {
+		for (unsigned j = 0; j < K; j++) {
+			for (unsigned r = 0; r < N; r++)res[i][j] += a[i][r] * b[r][j];
+		}
+	}
+	return Matrix<M, K, Field>(res);
+}
+
+template <unsigned M1, unsigned N1, typename Field1 =int, unsigned M2, unsigned N2, typename Field2 =int>
+bool operator== (const Matrix<M1, N1, Field1>& a, const Matrix<M2, N2, Field2>& b) {
+	if (M1 != M2 || N1 != N2)return false;
+	for (unsigned i = 0; i < M1; i++) {
+		for (unsigned j = 0; j < N2; j++)if (a[i][j] != b[i][j])return false;
+	}
+	return true;
+}
+
+template <unsigned M1, unsigned N1, typename Field1 =int, unsigned M2, unsigned N2, typename Field2 =int>
+bool operator!= (const Matrix<M1, N1, Field1>& a, const Matrix<M2, N2, Field2>& b) {
+	return !(a == b);
+}
+
+template <unsigned N1, typename Field1 =int, unsigned N2, typename Field2 =int>
+bool operator== (const SquareMatrix<N1, Field1>& a, const SquareMatrix<N2, Field2>& b) {
+	if (N1 != N2)return false;
+	for (unsigned i = 0; i < N1; i++) {
+		for (unsigned j = 0; j < N1; j++)if (a[i][j] != b[i][j])return false;
+	}
+	return true;
+}
+
+template <unsigned N1, typename Field1 =int, unsigned N2, typename Field2 =int>
+bool operator!= (const SquareMatrix<N1, Field1>& a, const SquareMatrix<N2, Field2>& b) {
+	return !(a == b);
+}
+
+template <unsigned M1, unsigned N1, typename Field1 =int, unsigned N2, typename Field2 =int>
+bool operator== (const Matrix<M1, N1, Field1>& a, const SquareMatrix<N2, Field2>& b) {
+	if (M1 != N2 || N1 != N2)return false;
+	for (unsigned i = 0; i < M1; i++) {
+		for (unsigned j = 0; j < N2; j++)if (a[i][j] != b[i][j])return false;
+	}
+	return true;
+}
+
+template <unsigned M1, unsigned N1, typename Field1 =int, unsigned N2, typename Field2 =int>
+bool operator!= (const Matrix<M1, N1, Field1>& a, const SquareMatrix<N2, Field2>& b) {
+	return !(a == b);
+}
+
+template <unsigned M1, unsigned N1, typename Field1 =int, unsigned N2, typename Field2 =int>
+bool operator== (const SquareMatrix<N2, Field2>& b, const Matrix<M1, N1, Field1>& a) {
+	if (M1 != N2 || N1 != N2)return false;
+	for (unsigned i = 0; i < M1; i++) {
+		for (unsigned j = 0; j < N2; j++)if (a[i][j] != b[i][j])return false;
+	}
+	return true;
+}
+
+template <unsigned M1, unsigned N1, typename Field1 =int, unsigned N2, typename Field2 =int>
+template <unsigned M1, unsigned N1, typename Field1 =int, unsigned N2, typename Field2 =int>
+bool operator!= (const SquareMatrix<N2, Field2>& b, const Matrix<M1, N1, Field1>& a) {
+	return !(a == b);
+}
